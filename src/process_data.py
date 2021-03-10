@@ -4,22 +4,22 @@ import json
 import time
 import csv
 import numpy as np
+import pandas as pd
 
-def process_data(data_path, save_file):
+def process_data(data_path):
     print("Loading dataset...")
-
-    processed_bitmaps = []
-    processed_evals = []
 
     data = pd.read_csv(data_path, nrows=1000000)
     fens = data["FEN"]
     evals = data["Evaluation"]
-
     print("Loaded dataset.")
     print("Processing dataset")
 
     start_time = time.time()
     count = 0
+
+    x = []
+    y = []
 
     for i in range(fens.size):
 
@@ -31,14 +31,14 @@ def process_data(data_path, save_file):
                 processed_eval = processed_eval.replace("#", "")
 
                 if (int(processed_eval) == 0):
-                    processed_eval = 200000000 # Mate in 0 has score 200000000
+                    processed_eval = 2 # Mate in 0 has score 2
                 else:
-                    processed_eval = 100000000 / int(processed_eval) 
+                    processed_eval = 1 + (1 / int(processed_eval)) 
             else:
                 processed_eval = int(evals[i])
 
-            processed_bitmaps.append(convert_board_to_bitmap(fens[i]))
-            processed_evals.append(processed_eval)
+            x.append(encode_board(fens[i]))
+            y.append(processed_eval/1000)
             count += 1
 
             if count % 1000 == 0:
@@ -47,88 +47,85 @@ def process_data(data_path, save_file):
         except Exception as e:
             print(f"Error processing: {e} \nFEN:{fens[i]}\nEval:{evals[i]}")
 
-
     print(f"Processed {count} examples.")
     print(f"Took {time.time() - start_time} seconds.")
     print("Writing processed dataset...")
-
-    save_data = {'Bitmap': processed_bitmaps, 'Evaluation': processed_evals}  
-    df = pd.DataFrame(save_data)
     
-    df.to_csv(save_file)
+    x = np.array(x).astype(np.byte)
+    y = np.array(y)
+    
+    print(f"X shape: {x.shape} Y shape: {y.shape}")
+    with open('../dataset/processed_X.npy', 'wb') as f:
+        np.save(f, x)
+    with open('../dataset/processed_Y.npy', 'wb') as f:
+        np.save(f, y)
 
     print("Done.")
 
-
-def convert_board_to_bitmap(fen):
-
-    bitmap = ""
-    board = chess.Board(fen)
-
-    piece_id = [1, 2, 3, 4, 5, 6]
-    color_id = [True, False]
-
-    for color in color_id:
-        for piece in piece_id:
-            for i in range(64):
-                p = board.piece_at(i)
-                
-                if p is None:
-                    bitmap += "0"
-                    continue
-
-                if p.piece_type == piece and p.color == color:
-                    bitmap += "1"
-                else:
-                    bitmap += "0"
-
-    for color in color_id:
-        bitmap += str(int(board.has_kingside_castling_rights(color)))
-        bitmap += str(int(board.has_queenside_castling_rights(color)))
-
-    return bitmap
-
 def encode_board(fen):
 
-    board = chess.Board(fen)
+    result_dict = {
+        "1-0": 1,
+        "0-1": -1,
+        "1/2-1/2": 0,
+        "*": 0        
+    }
 
+    board = chess.Board(fen)
+    result = result_dict[board.result()]
+    
+    turn_coeff = (2*int(board.turn) - 1)
     piece_id = [1, 2, 3, 4, 5, 6]
     color_id = [True, False]
 
     encoding = []
 
-    for i in range(64):
-        p = board.piece_at(i)
+    for color in color_id:
+        for piece in piece_id:
+            feature = []
+            for i in range(64):
+                p = board.piece_at(i)
         
-        if p is None:
-            encoding.append(0)
-            continue
+                if p is None:
+                    feature.append(0)
+                    continue
 
-        encoding.append((2*int(p.color) - 1) * (p.piece_type/6))
+                if p.piece_type == piece and p.color == color:
+                    feature.append(1)
+                else:
+                    feature.append(0)
 
-    print(encoding)
-
-    return np.array(encoding)
-
-def reserialize_data(csv_file):
-    dataset = []
-    with open(csv_file, newline='') as f:
-        reader = csv.reader(f)
-        next(reader)
-        
-        i = 0
-        for row in reader:
-            dataset.append([BoardBitmapConverter.convertStringtoBitMap(row[1]), float(row[2])])
-            i += 1
-
-            if i % 1000 == 0:
-                print(f"Processed: {i} lines.")
+            encoding.append(np.array(feature).reshape(8,8))
 
 
-    np.save(f"../dataset/serialized_dataset.npy", dataset)
-    print("Saved.")
+    for color in color_id:
+        feature = []
+        for i in range(64):
+            attacked = board.is_attacked_by(color, i)
+            if attacked:
+                feature.append((2 * int(color) - 1))
+            else:
+                feature.append(0)
+
+        encoding.append(np.array(feature).reshape(8,8))
+
+    info_feature = [result]
+    info_feature.append(turn_coeff)
+
+    for color in color_id:
+        info_feature.append((2*int(color) - 1) * (int(board.has_kingside_castling_rights(color))))
+        info_feature.append((2*int(color) - 1) * (int(board.has_queenside_castling_rights(color))))
+    
+    info_feature.append(turn_coeff * int(board.is_check()))
+    info_feature.append(turn_coeff * int(board.has_legal_en_passant()))
+
+    for j in range(64 - len(info_feature)):
+        info_feature.append(0)
+
+    encoding.append(np.array(info_feature).reshape(8,8))
+    encoding = np.array(encoding).astype(np.byte)
+
+    return encoding
 
 if __name__ == "__main__":
-    # process_data('../dataset/chessData.csv', "../dataset/processed_data.csv")
-    # reserialize_data("../dataset/processed_data_1M.csv")
-    encode_board("r1bqkbnr/1ppp1Qpp/p1n5/4p3/4P3/3B4/PPPP1PPP/RNB1K1NR b KQkq - 0 1")
+    process_data('../dataset/chessData.csv')

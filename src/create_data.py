@@ -5,14 +5,18 @@ from matplotlib import pyplot as plt
 if __name__ == '__main__':
 
     print("Loading data...")
-    x_train = np.load("../dataset/train_X_3.npy")
-    x_test = np.load("../dataset/test_X_3.npy")
-    y_train = np.load("../dataset/train_Y_2.npy")
-    y_test = np.load("../dataset/test_Y_2.npy")
+    # x_train = np.load("../dataset/train_X_3.npy")
+    # x_test = np.load("../dataset/test_X_3.npy")
+    # y_train = np.load("../dataset/train_Y_2.npy")
+    # y_test = np.load("../dataset/test_Y_2.npy")
+
+    x = np.load("../dataset/processed_X.npy")
+    y = np.load("../dataset/processed_Y.npy")
+
     print("Loaded data.")
 
-    x = np.concatenate((x_train, x_test), axis=0).astype(np.byte)
-    y = np.concatenate((y_train, y_test), axis=0)
+    # x = np.concatenate((x_train, x_test), axis=0).astype(np.byte)
+    # y = np.concatenate((y_train, y_test), axis=0)
 
     assert len(x) == len(y)
 
@@ -21,7 +25,7 @@ if __name__ == '__main__':
     y = y[shuffler]
 
     # renormalize y
-    y[abs(y)>1] = np.sign(y[abs(y)>1])*1 + y[abs(y)>1]/10
+    # y[abs(y)>1] = np.sign(y[abs(y)>1])*1 + y[abs(y)>1]/10
 
     print("Writing files...")
    

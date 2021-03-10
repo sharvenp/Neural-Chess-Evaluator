@@ -2,3 +2,5 @@
 *.npy
 *.csv
 dataset/
+models/
+*.sav
