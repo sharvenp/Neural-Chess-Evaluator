@@ -4,3 +4,4 @@
 dataset/
 models/
 *.sav
+__pycache__

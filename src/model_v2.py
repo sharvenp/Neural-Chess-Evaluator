@@ -1,6 +1,7 @@
 
 from sklearn.neural_network import MLPRegressor
 from matplotlib import pyplot as plt
+from util import Util
 import numpy as np
 import pickle
 import time
@@ -13,7 +14,7 @@ class ChessEvaluator():
         if load_model:
             self._model = pickle.load(open(load_model, "rb"))
         else:
-            self._model = MLPRegressor((500, 300, 20),
+            self._model = MLPRegressor((700, 500, 40),
                                         solver='sgd',
                                         learning_rate_init=0.001,
                                         shuffle=True,
@@ -21,63 +22,10 @@ class ChessEvaluator():
                                         momentum=0.7,
                                         max_iter=200,
                                         batch_size=500,
-                                        alpha=0.00018)
-
-    def _convert_board_to_bitmap(self, board):
-
-        result_dict = {
-            "1-0": 1,
-            "0-1": -1,
-            "1/2-1/2": 0,
-            "*": 0        
-        }
-
-        result = result_dict[board.result()]
-        
-        turn_coeff = (2*int(board.turn) - 1)
-        piece_id = [1, 2, 3, 4, 5, 6]
-        color_id = [True, False]
-
-        encoding = []
-
-        for color in color_id:
-            for piece in piece_id:
-                for i in range(64):
-                    p = board.piece_at(i)
-            
-                    if p is None:
-                        encoding.append(0)
-                        continue
-
-                    if p.piece_type == piece and p.color == color:
-                        encoding.append(1)
-                    else:
-                        encoding.append(0)
-
-        for color in color_id:
-            for i in range(64):
-                attacked = board.is_attacked_by(color, i)
-                if attacked:
-                    encoding.append((2 * int(color) - 1))
-                else:
-                    encoding.append(0)
-
-        encoding.append(result)
-        encoding.append(turn_coeff)
-
-        for color in color_id:
-            encoding.append((2*int(color) - 1) * (int(board.has_kingside_castling_rights(color))))
-            encoding.append((2*int(color) - 1) * (int(board.has_queenside_castling_rights(color))))
-        
-        encoding.append(turn_coeff * int(board.is_check()))
-        encoding.append(turn_coeff * int(board.has_legal_en_passant()))
-
-        encoding = np.array(encoding).astype(np.byte)
-
-        return encoding
-
+                                        alpha=0.0005)
+       
     def forward(self, board):
-        return self._model.predict(self._convert_board_to_bitmap(board))
+        return self._model.predict(Util.convert_to_bitmap_additional(board))
 
     def train(self, train_X, train_Y, val_X, val_Y, num_epochs=5):
         print("Training model...")
