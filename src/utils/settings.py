@@ -1,0 +1,9 @@
+
+class Settings:
+
+    SCREEN_WIDTH = 600
+    SCREEN_HEIGHT = 600
+    BOARD_OFFSET = 25
+
+    DARK_SQUARE_COLOR = (186, 85, 70)
+    LIGHT_SQUARE_COLOR = (240, 216, 191)

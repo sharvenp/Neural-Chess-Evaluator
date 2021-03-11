@@ -1,22 +1,22 @@
-
 import chess
 import numpy as np
 
+
 class Util:
-    
+
     @staticmethod
     def convert_to_bitmap_additional(board):
-        
+
         result_dict = {
             "1-0": 1,
             "0-1": -1,
             "1/2-1/2": 0,
-            "*": 0        
+            "*": 0
         }
 
         result = result_dict[board.result()]
-        
-        turn_coeff = (2*int(board.turn) - 1)
+
+        turn_coeff = (2 * int(board.turn) - 1)
         piece_id = [1, 2, 3, 4, 5, 6]
         color_id = [True, False]
 
@@ -26,7 +26,7 @@ class Util:
             for piece in piece_id:
                 for i in range(64):
                     p = board.piece_at(i)
-            
+
                     if p is None:
                         encoding.append(0)
                         continue
@@ -48,9 +48,9 @@ class Util:
         encoding.append(turn_coeff)
 
         for color in color_id:
-            encoding.append((2*int(color) - 1) * (int(board.has_kingside_castling_rights(color))))
-            encoding.append((2*int(color) - 1) * (int(board.has_queenside_castling_rights(color))))
-        
+            encoding.append((2 * int(color) - 1) * (int(board.has_kingside_castling_rights(color))))
+            encoding.append((2 * int(color) - 1) * (int(board.has_queenside_castling_rights(color))))
+
         encoding.append(turn_coeff * int(board.is_check()))
         encoding.append(turn_coeff * int(board.has_legal_en_passant()))
 
@@ -58,7 +58,7 @@ class Util:
 
     @staticmethod
     def convert_to_bitmap(board):
-        
+
         bitmap = []
 
         piece_id = [1, 2, 3, 4, 5, 6]

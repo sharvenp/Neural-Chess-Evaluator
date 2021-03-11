@@ -1,7 +1,7 @@
 
 from sklearn.neural_network import MLPRegressor
 from matplotlib import pyplot as plt
-from util import Util
+from utils.util import Util
 import numpy as np
 import pickle
 import time
