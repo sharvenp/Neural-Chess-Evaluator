@@ -1,61 +1,70 @@
-
-from model_v1 import ChessEvaluator
 import chess
+import concurrent.futures
 
 class Engine:
 
-    def __init__(self, side, depth_limit):
+    def __init__(self, side, depth_limit, evaluation_function):
         self._side = side
-        self._evaluator = ChessEvaluator(load_model="../models/hugo.sav")
+        self._evaluation_function = evaluation_function
         self._depth_limit = depth_limit
 
     def get_move(self, curr_state):
 
         best_move = None
-        best_eval = -1000
-        for move in curr_state.legal_moves:
-            curr_state.push(move)
-            evaluation = self._minmax(curr_state, 0, True, -1000, 1000)
-            if evaluation > best_eval:
+        best_eval = 10000
+        features = []
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            for move in curr_state.legal_moves:
+                copy = curr_state.copy()
+                copy.push(move)
+                if copy.is_game_over():
+                    print("Game over state")
+                f = executor.submit(self._minmax, copy, self._depth_limit, False, -10000, 10000)
+                features.append((f, move))
+
+        for [f, move] in features:
+            evaluation = f.result()
+            if evaluation < best_eval:
                 best_eval = evaluation
                 best_move = move
-            curr_state.pop()
+
+        print(f"Best move: {best_move} ({best_eval})")
 
         return best_move
 
-    def _minmax(self, state, depth, isMaximizingPlayer, alpha, beta):
+    def _minmax(self, state, depth, maximizing_player, alpha, beta):
 
         result = self._is_game_over(state)
         if result is not None:
             # Game over
             return result
 
-        if depth == self._depth_limit:
-            return abs(self._evaluator.forward(state))
+        if depth == 0:
+            return self._evaluation_function.evaluate(state)
 
         # Game continues
-        if isMaximizingPlayer:
+        if maximizing_player:
             # Maximize engine
-            value = -1000
+            value = -10000
             for move in state.legal_moves:
                 state.push(move)
-                value = max(value, self._minmax(state, depth + 1, False, alpha, beta))
+                value = max(value, self._minmax(state, depth - 1, not maximizing_player, alpha, beta))
                 state.pop()
-                alpha = max(alpha, value)
-                if beta <= alpha:
-                    break
+                # beta = min(beta, value)
+                # if beta <= alpha:
+                #     break
             return value
-        
         else:
             # Minimize opponent
-            value = 1000
+            value = 10000
             for move in state.legal_moves:
                 state.push(move)
-                value = min(value, self._minmax(state, depth + 1, False, alpha, beta))
+                value = min(value, self._minmax(state, depth - 1, not maximizing_player, alpha, beta))
                 state.pop()
-                beta = min(beta, value)
-                if beta <= alpha:
-                    break
+                # alpha = max(alpha, value)
+                # if beta <= alpha:
+                #     break
             return value
 
     def _is_game_over(self, state):
@@ -63,10 +72,11 @@ class Engine:
             "1-0": 10000,
             "0-1": -10000,
             "1/2-1/2": 0,
-            "*": None        
+            "*": None
         }
 
         return result_dict[state.result()]
+
 
 if __name__ == '__main__':
     e = Engine(1, 3)

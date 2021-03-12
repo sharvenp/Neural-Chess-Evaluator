@@ -2,12 +2,15 @@ import pygame as pg
 from utils.settings import Settings
 from utils.observer import Observer
 from utils.util import Util
+import time
 
 
 class View(Observer):
 
-    def __init__(self, controller):
+    def __init__(self, controller, players):
+        self._players = players
         self._controller = controller
+        self._turn = 0
         pg.init()
         pg.display.set_caption("Chess")
         self._screen = pg.display.set_mode((Settings.SCREEN_WIDTH, Settings.SCREEN_HEIGHT))
@@ -41,7 +44,7 @@ class View(Observer):
             # Draw legal moves
             for j in o.get_to_squares():
                 x, y = Util.convert_i_to_xy(j)
-                pg.draw.circle(self._screen, Settings.LEGAL_MARKER_COLOR, (x + square_width//2, y + square_width//2), 5)
+                pg.draw.circle(self._screen, Settings.LEGAL_MARKER_COLOR, (x + square_width//2, y + square_width//2), 10)
 
         # Draw pieces
         board = o.get_board()
@@ -63,6 +66,14 @@ class View(Observer):
             self._screen.blit(piece_image, piece_imagerect)
 
         pg.display.update()
+
+        if o.get_board().is_game_over():
+            print("Game Over:", o.get_board().result())
+            time.sleep(3)
+            return
+
+        if self._players[o.get_turn()][0] == "E":
+            o.make_engine_move(self._players[o.get_turn()][1])
 
     def run(self):
 

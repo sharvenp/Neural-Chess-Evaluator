@@ -1,14 +1,13 @@
 from utils.observable import Observable
 import chess
-from engine import Engine
+
 
 class ChessModel(Observable):
 
-    def __init__(self, players):
+    def __init__(self):
         Observable.__init__(self)
-        self._players = players
         self._turn = 0
-        self._board = chess.Board()
+        self._board = chess.Board("8/8/8/8/4k3/8/1q6/4K3 w - - 0 1")
         self._from_square = None
         self._to_squares = []
 
@@ -40,16 +39,9 @@ class ChessModel(Observable):
         self._to_squares = []
         self.notify_all()
 
-        if self._board.is_game_over():
-            print("Game Over:", self._board.result())
-            return
-
-        if self._players[self._turn][0] == "E":
-            self._make_engine_move()
-
-    def make_engine_move(self):
+    def make_engine_move(self, engine):
         print("Engine thinking...")
-        move = self._players[self._turn][1].get_move(self._board)
+        move = engine.get_move(self._board)
         print("Engine playing move:", move)
         self._board.push(move)
         self._turn = (self._turn + 1) % 2
@@ -57,6 +49,9 @@ class ChessModel(Observable):
 
     def get_board(self):
         return self._board
+
+    def get_turn(self):
+        return self._turn
 
     def get_from_square(self):
         return self._from_square
