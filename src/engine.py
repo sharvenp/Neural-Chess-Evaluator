@@ -1,7 +1,6 @@
 
 from model_v1 import ChessEvaluator
 import chess
-import random
 
 class Engine:
 

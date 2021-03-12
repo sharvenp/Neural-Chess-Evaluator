@@ -5,6 +5,7 @@ class Observable:
 
     def add_observer(self, o):
         self._observers.append(o)
+        o.update(self)
 
     def notify_all(self):
         for o in self._observers:

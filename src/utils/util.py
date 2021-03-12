@@ -1,5 +1,5 @@
-import chess
 import numpy as np
+from utils.settings import Settings
 
 
 class Util:
@@ -83,3 +83,23 @@ class Util:
             bitmap.append(int(board.has_queenside_castling_rights(color)))
 
         return np.array(bitmap).reshape(1, -1)
+
+    @staticmethod
+    def convert_xy_to_rc(x, y):
+        square_width = (Settings.SCREEN_WIDTH - (Settings.BOARD_OFFSET * 2)) // 8
+        col = (x - Settings.BOARD_OFFSET) // square_width
+        row = (y - Settings.BOARD_OFFSET) // square_width
+        return 7 - row, col
+
+    @staticmethod
+    def convert_rc_to_i(r, c):
+        return r * 8 + c
+
+    @staticmethod
+    def convert_i_to_xy(i):
+        square_width = (Settings.SCREEN_WIDTH - (Settings.BOARD_OFFSET * 2)) // 8
+        row = (63 - i) // 8
+        col = i % 8
+        x = Settings.BOARD_OFFSET + square_width * col
+        y = Settings.BOARD_OFFSET + square_width * row
+        return x, y

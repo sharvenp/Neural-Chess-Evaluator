@@ -7,6 +7,10 @@ import pickle
 import time
 import chess
 
+def _calculate_y(vec, w, b):
+    z = (vec @ w) + b
+    return z * (z > 0)
+
 class ChessEvaluator():
     
     def __init__(self, load_model=None):
@@ -26,11 +30,11 @@ class ChessEvaluator():
     # def forward(self, board):
     #     return self._model.predict(Util.convert_to_bitmap(board).astype(np.float32))
 
+    
     def forward(self, board):
         curr = Util.convert_to_bitmap(board)
         for i in range(len(self._model.coefs_)):
-            curr = (curr @ self._model.coefs_[i]) + self._model.intercepts_[i]
-            curr = curr * (curr > 0)
+            curr = _calculate_y(curr.astype(np.float64), self._model.coefs_[i], self._model.intercepts_[i])
         return curr[0][0]
 
     def train(self, train_X, train_Y, val_X, val_Y, num_epochs=5):
@@ -70,5 +74,5 @@ if __name__ == "__main__":
     board = chess.Board("8/1q6/8/8/K1k5/8/7Q/8 b - - 0 1")
     print(board)
     s = time.time()
-    print(model.forward_manual(board))
+    print(model.forward(board))
     print(time.time() - s)
